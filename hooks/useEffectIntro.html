@@ -40,6 +40,7 @@
             const accessKey = "3_TmJcG73zY3A6uwGR9-n5iMANLZ2RERbBDWSSqfi7U";
 
             const SearchBox = ({ onSearchHandler, filterString }) => {
+              console.log('onSearch');
               return (
                 <div>
                   <label htmlFor="filter">搜尋</label>
@@ -76,17 +77,18 @@
               // getPhoto();
               // #2 useEffect
 
-              const button = document.getElementById("myButton");
+              // const button = document.getElementById("myButton");
 
-              button.addEventListener("click", () => {
-                console.log("按鈕被點擊了！"); // 3. 最後執行
-              });
+              // button.addEventListener("click", () => {
+              //   console.log("按鈕被點擊了！"); // 3. 最後執行
+              // });
 
               console.log("程式碼繼續執行"); // 1. 先執行
 
               // 模擬一些耗時的同步操作
-              for (let i = 0; i < 1000000000; i++) {
+              for (let i = 0; i < 100; i++) {
                 // 一些計算
+                console.log('同步計算');
               }
 
               console.log("同步操作完成"); // 2. 接著執行

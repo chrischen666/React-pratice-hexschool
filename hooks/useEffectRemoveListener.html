@@ -39,9 +39,16 @@
             const api = "https://api.unsplash.com/search/photos/";
             const accessKey = "FTOL21x7uqiv-3ANxIuzemPRhi8-IDZ8dtT_CGKYVus";
 
-            const Card = ({ item }) => {
+            const Card = ({ item, getSinglePhoto }) => {
               return (
-                <div className="card">
+                <a
+                  className="card"
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    getSinglePhoto(item.id);
+                  }}
+                >
                   <img
                     className="card-img img-cover"
                     width="100%"
@@ -49,7 +56,7 @@
                     src={`${item.urls.raw}&w=600&q=80`}
                     alt=""
                   />
-                </div>
+                </a>
               );
             };
 
@@ -68,93 +75,160 @@
               );
             };
 
-            // 1.搜尋會做調整，keyPress(Enter)
-            // 2.把 getPhoto取得特定頁數
+            // 1.按下keyPress，搜尋會做調整
+            // 2.把getPhoto，取得特定頁數
             // 3.加入滾動事件，滾動到列表下方時，取得一筆新的
-            // 4.修正過度觸發問題 -> 加入讀取
-            //疑問
-            // setState何時使用callback fn？
-            // 一次出發多個setState時會單一處理，解決方式使用callback fn
-            //useState生命週期？
-            // 為何滾動事件放到useEffect中
+            // 4.修正過度觸發的問題
+            // 5.輸入文字，資料狀態呈現要正確（移除重複註冊監聽事件，沒移除往下滑會呼叫舊的監聽事件)
+            // 6.確保監聽事件是正常的
+            // 7.剩餘次數
+            // 8.讀取效果
+            // 9.取得單張照片
+            // -打開Modal(單張)
+            // -重新發出請求
 
-            // 5.輸入文字，資料狀態呈現要正確
-            // 6.監聽事件要正常
-
-            // 為何滾動事件要在useEffect中？
-
-            // let currentPage = 1;
+            let currentPage = 1;
             const App = () => {
               const [filterString, setFilterString] = useState("animal");
               const [jsonData, setJsonData] = useState([]);
-              const isLoading = useRef(false);
-              const currentPage = useRef(1);
+              const [ratelimitRemaining, setRatelimitRemaining] = useState(50);
+              //Loading元件的讀取狀態
+              const [isLoading, setIsLoading] = useState(false);
+              //getPhoto閉包中資料狀態
+              const isLoadingRef = useRef(false);
+
+              //判斷按下的是否是enter
               const onSearchHandler = (e) => {
                 if (e.key === "Enter") {
                   setFilterString(e.target.value);
                 }
               };
 
-              const getPhotos = async (page = 1, isNew = true) => {
+              //請求api
+              //滾動事件所取得的getPhotos是舊的狀態，例如將filterString改為building，滾動事件中的getPhoto由於閉包關係filterString的狀態一樣是animal
+              //要解決getPhoto閉包的問題，使用useRef傳參考方式解決，因傳參考可以將閉包中資料更新，useState做不到
+              const getPhoto = async (page = 1, isNew = true) => {
                 try {
                   // 搜尋特定需要加入 query
-                  isLoading.current = true;
-                  console.log('currentPage.current:',currentPage.current);
-                  console.log('page',page);
                   const result = await axios.get(
                     `${api}?client_id=${accessKey}&query=${filterString}&page=${page}`
                   );
                   console.log(result);
-                  setJsonData((preData) => {
-                    //更新資料觸發
+                  setRatelimitRemaining(
+                    result.headers["x-ratelimit-remaining"]
+                  );
+                  setJsonData((pre) => {
                     if (isNew) {
                       return [...result.data.results];
                     } else {
-                      return [...preData, ...result.data.results];
+                      return [...pre, ...result.data.results];
                     }
                   });
-                  // currentPage.current = page; //避免重新搜尋時，currentPage不是從第一頁開始
                   setTimeout(() => {
-                    isLoading.current = false;
+                    setIsLoading(false);
+                    isLoadingRef.current = false;
                   }, 1000);
                 } catch (error) {
                   console.log(error);
                 }
               };
+
+              //關鍵字變動時，會觸發請求api
               const listRef = useRef(null);
+              const currentPage = useRef(1);
 
               useEffect(() => {
-                
-                const scrollEvent = ()=>{
+                getPhoto(1, true);
+                currentPage.current = 1;
+                //function中的fn向外引用變數會形成閉包
+                //閉包舊狀態為filterString為animal，使用useRef進行更新
+                const scrollEvent = () => {
                   const height =
-                    listRef.current.offsetHeight +
-                    listRef.current.offsetTop -
+                    listRef.current.offsetTop +
+                    listRef.current.offsetHeight -
                     window.innerHeight;
-                  if (!isLoading.current && window.scrollY > height) {
-                    //續滾動到下方，並沒有在讀取中
-                    // console.dir("currentPage" + currentPage.current);
+                  if (!isLoadingRef.current && window.scrollY > height) {
                     currentPage.current++;
-                    getPhotos(currentPage.current,false); //頁數+1
+                    isLoadingRef.current = true;
+                    setIsLoading(true);
+                    getPhoto(currentPage.current, false);
                   }
-                }
-                getPhotos(1,true);
+                };
+                //移除removeEventListener的必須的，如不移除監聽事件會累計上去
                 window.addEventListener("scroll", scrollEvent);
-                //移除舊的監聽
-                return () => window.removeEventListener('scroll',scrollEvent)
+                return () => window.removeEventListener("scroll", scrollEvent);
               }, [filterString]);
+
+              useEffect(() => {
+                const body = document.querySelector("body");
+                if (isLoading) {
+                  body.style.overflow = "hidden";
+                } else {
+                  body.style.overflow = "auto";
+                }
+              }, [isLoading]);
+
+              const Loading = ({ isLoading }) => {
+                return (
+                  <div
+                    className="loading"
+                    style={{ display: isLoading ? "flex" : "none" }}
+                  >
+                    <div className="spinner-grow" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                );
+              };
+
+              const modalRef = useRef(null);
+              const myModal = useRef(null);
+              useEffect(() => {
+                myModal.current = new bootstrap.Modal(modalRef.current);
+              }, []);
+
+              const [photoUrl, setPhotoUrl] = useState("");
+
+              //取得單張照片
+              const getSinglePhoto = async (id) => {
+                const api = "https://api.unsplash.com/photos/";
+                try {
+                  const result = await axios.get(
+                    `${api}${id}?client_id=${accessKey}`
+                  );
+                  setPhotoUrl(result.data.urls.regular);
+                  myModal.current.show();
+                } catch (error) {
+                  console.log(error);
+                }
+              };
 
               return (
                 <div>
+                  <Loading isLoading={isLoading} />
                   <SearchBox
                     onSearchHandler={onSearchHandler}
                     filterString={filterString}
                   />
+                  <p>剩餘請求次數{ratelimitRemaining}次</p>
                   <div className="row row-cols-2 g-3" ref={listRef}>
                     {jsonData.map((item) => (
                       <div className="col" key={item.id}>
-                        <Card item={item} />
+                        <Card item={item} getSinglePhoto={getSinglePhoto} />
                       </div>
                     ))}
+                  </div>
+
+                  <div
+                    ref={modalRef}
+                    className="modal fade"
+                    tabIndex="-1"
+                    aria-labelledby="exampleModalLabel"
+                    aria-hidden="true"
+                  >
+                    <div className="modal-dialog">
+                      <img src={photoUrl} alt="img" width='100%'/>
+                    </div>
                   </div>
                 </div>
               );
@@ -169,6 +243,19 @@
             /* CSS 樣式，可以確保圖片不要變形 */
             .img-cover {
               object-fit: cover;
+            }
+            .loading {
+              position: fixed;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              top: 0;
+              background-color: rgba(255, 255, 255, 0.2);
+              backdrop-filter: blur(5px);
+              z-index: 9999;
+              display: flex;
+              justify-content: center;
+              align-items: center;
             }
           </style>
           <!-- 🙇🙇練習結束🙇🙇 -->

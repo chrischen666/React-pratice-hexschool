@@ -52,110 +52,87 @@
                 mode: "onTouched",
               });
 
+              const watchForm = useWatch({
+                control,
+              });
+
               const onSubmit = (data) => {
+                console.log(errors);
                 console.log(data);
               };
 
               useEffect(() => {
-                (async () => {
-                  try {
-                    const res = await axios.get("./assets/taiwan.json");
-                    setAddressData(res.data);
-                    console.log(res);
-                  } catch (error) {
-                    console.log(error);
-                  }
-                })();
-              }, []);
-
-              const [townData, setTownData] = useState("");
-
-              const watchForm = useWatch({
-                control,
-              });
-              useEffect(() => {
-                console.log("Values", getValues()); // 可以使用 getValues 取得所有、特定值
+                console.log(getValues()); // 可以使用 getValues 取得所有、特定值
                 console.log("errors", errors);
                 // 或是使用 setValues 寫入值
               }, [watchForm]); // 將新變數傳入
 
+              // 取得地址資料
+              useEffect(() => {
+                (async () => {
+                  const result = await axios.get("./assets/taiwan.json");
+                  console.log(result);
+                  setAddressData(result.data);
+                })();
+              }, []);
+
               return (
                 <div>
-                  {townData.toString()}
                   <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="mb-3">
                       <label htmlFor="username" className="form-label">
                         使用者名稱
                       </label>
                       <input
-                        {...register("username", {
-                          required: {
-                            value: true,
-                            message: "帳號必填",
-                          },
-                        })}
                         id="username"
                         type="text"
-                        className={`form-control ${
-                          errors.username && "is-invalid"
-                        }`}
+                        className="form-control"
                         name="username"
+                        {...register("username", {
+                          required: "使用者名稱為必填",
+                          maxLength: {
+                            value: 10,
+                            message: "使用者名稱長度不超過 10",
+                          },
+                        })}
                       />
-                      {errors.username && (
-                        <div className="invalid-feedback">
-                          {errors?.username?.message}
-                        </div>
-                      )}
                     </div>
                     <div className="mb-3">
                       <label htmlFor="password" className="form-label">
                         密碼
                       </label>
                       <input
-                        id="password"
-                        type="password"
-                        className={`form-control ${
-                          errors.password && "is-invalid"
-                        }`}
                         {...register("password", {
-                          required: {
-                            value: true,
-                            message: "密碼必填",
+                          required: "密碼 為必填",
+                          pattern: {
+                            value:
+                              /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+                            message: "密碼需包含大小寫字母、數字及特殊符號",
                           },
                         })}
+                        id="password"
+                        type="password"
+                        className="form-control"
                       />
-                      {errors.password && (
-                        <div className="invalid-feedback">
-                          {errors?.password?.message}
-                        </div>
-                      )}
                     </div>
                     <div className="mb-3">
                       <label htmlFor="tel">電話</label>
                       <input
-                        id="tel"
-                        type="tel"
-                        className={`form-control ${errors.tel && "is-invalid"}`}
                         {...register("tel", {
-                          required: {
-                            value: true,
-                            message: "電話必填",
+                          required: "電話為必填",
+                          minLength: {
+                            value: 6,
+                            message: "電話不少於 6 碼",
                           },
                           maxLength: {
                             value: 12,
-                            message: "電話不多於12碼",
-                          },
-                          minLength: {
-                            value: 6,
-                            message: "電話不短於6碼",
+                            message: "電話不超過 12 碼",
                           },
                         })}
+                        id="tel"
+                        type="tel"
+                        className="form-control"
                       />
-                      {errors.tel && (
-                        <div className="invalid-feedback">
-                          {errors?.tel?.message}
-                        </div>
-                      )}
                     </div>
                     <div className="row mb-3 g-3">
                       <div className="col-6">
@@ -169,14 +146,14 @@
                           id="city"
                           className="form-select"
                         >
-                          <option value="">請選擇一個縣市</option>
-                          {addressData.map((city) => {
+                          <option value="">請選擇縣市</option>
+                          {addressData.map((address) => {
                             return (
                               <option
-                                value={city.className}
-                                key={city.CityName}
+                                key={address.CityName}
+                                value={address.CityName}
                               >
-                                {city.CityName}
+                                {address.CityName}
                               </option>
                             );
                           })}
@@ -188,20 +165,23 @@
                         </label>
                         <select
                           {...register("district", {
-                            required: "縣市為必填",
+                            required: "鄉鎮市區為必填",
                           })}
                           id="district"
                           className="form-select"
                           disabled={!getValues().city}
                         >
-                          <option value="">請選擇一個鄉鎮市區</option>
+                          <option>Choose...</option>
                           {addressData
                             .find((city) => {
                               return city.CityName === getValues().city;
                             })
-                            ?.AreaList?.map((area) => {
+                            ?.AreaList.map((area) => {
                               return (
-                                <option value={area} key={area.AreaName}>
+                                <option
+                                  key={area.AreaName}
+                                  value={area.AreaName}
+                                >
                                   {area.AreaName}
                                 </option>
                               );
@@ -213,23 +193,13 @@
                       <div className="mb-3">
                         <label htmlFor="address">地址</label>
                         <input
+                          {...register("address", {
+                            required: "地址為必填",
+                          })}
                           id="address"
                           type="text"
-                          className={`form-control ${
-                            errors.address && "is-invalid"
-                          }`}
-                          {...register("address", {
-                            required: {
-                              value: true,
-                              message: "地址必填",
-                            },
-                          })}
+                          className="form-control"
                         />
-                        {errors.address && (
-                          <div className="invalid-feedback">
-                            {errors?.address?.message}
-                          </div>
-                        )}
                       </div>
                     </div>
                     <div className="mb-3">
@@ -240,7 +210,10 @@
                           type="radio"
                           name="isVegetarian"
                           id="vegetarian"
-                          value="true"
+                          value={true}
+                          {...register("isVegetarian", {
+                            required: "請選擇是否吃素",
+                          })}
                         />
                         <label
                           className="form-check-label"
@@ -255,7 +228,10 @@
                           type="radio"
                           name="isVegetarian"
                           id="non-vegetarian"
-                          value="false"
+                          value={false}
+                          {...register("isVegetarian", {
+                            required: "請選擇是否吃素",
+                          })}
                         />
                         <label
                           className="form-check-label"
@@ -278,10 +254,14 @@
                     <div className="mb-3">
                       <div className="form-check">
                         <input
+                        
                           className="form-check-input"
                           type="checkbox"
                           id="checkbox"
                           required
+                          {...register("isCheckForm", {
+                            required: true,
+                          })}
                         />
                         <label className="form-check-label" htmlFor="checkbox">
                           確認同意本文件

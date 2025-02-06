@@ -9,9 +9,36 @@ const { useState, useEffect, useRef } = React;
 
 // https://usehooks.com/
 // https://usehooks.com/useDebounce/
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = React.useState(value);
+
+  React.useEffect(() => {
+    //delay秒後寫入值
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    // return clearTimeout(handler);
+    // 執行時機是value,delay改變時會觸發
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  //回傳寫入的值
+  return debouncedValue;
+}
 
 const App = () => {
-  const [text, setText] = useState('')
+  const [text, setText] = useState('');
+
+  //當text改變時會觸發useDebounce(text,500);
+  const debounceText = useDebounce(text,500);
+
+  //debounceText改變時會觸發
+  useEffect(()=>{
+    console.log(debounceText);
+  },[debounceText])
 
   return (<>
     <input type="text" onChange={e => setText(e.target.value)}

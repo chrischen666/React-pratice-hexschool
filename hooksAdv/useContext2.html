@@ -7,6 +7,7 @@
 <script type="text/babel">
 const { useState, useEffect, createContext, useContext } = React;
 
+//建立跨元件狀態
 const UserContext = createContext({})
 
 const LoginForm = () => {
@@ -29,14 +30,35 @@ const Greeting = () => {
   </>
 }
 
-const App = () => {
+//跨元件的資料狀態
+const UserProvider = ({children})=>{
   const [username, setUsername] = useState('卡斯伯');
   const [isLogin, setIsLogin] = useState(false);
-
-  return (<>
-    <UserContext.Provider value={{ username, setUsername, setIsLogin }}>
-      { isLogin ? <Greeting /> : <LoginForm /> }
+  //使用children會將內層元件包裹，使內層元件可以接受到共享資料狀態
+  // UserProvider 元件需要包裹 {children} 是因為它需要將被它包裹的子元件渲染出來
+  return(
+    <UserContext.Provider value={{ username, setUsername, setIsLogin,isLogin }}>
+      {children}
     </UserContext.Provider>
+  )
+}
+
+//內層元件
+// 使用useContext hook從UserContext取得isLogin資料狀態
+const Dashboard = ()=>{
+  const {isLogin} = useContext(UserContext);
+  return (
+    <>
+    { isLogin ? <Greeting /> : <LoginForm /> }
+    </>
+  )
+}
+
+const App = () => {
+  return (<>
+    <UserProvider>
+      <Dashboard/>
+    </UserProvider>
   </>)
 }
 

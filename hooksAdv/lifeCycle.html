@@ -7,12 +7,19 @@
 <script type="text/babel">
   const { useState, useEffect } = React;
   
+  let num = 0;
   const App = () => {
     const [price, setPrice] = useState(100);
     const [qty, setQty] = useState(1);
-  
+    num++
+    console.log(num+'次');
+    const total = qty * price;
+    console.log(total);
+
     return (<>
-      {price} {qty}
+      {price} {qty} 
+      <br/>
+      {total}
       <input type="number" value={price} onChange={(e) => setPrice(parseInt(e.target.value))} />
       <input type="number" value={qty} onChange={(e) => setQty(parseInt(e.target.value))} />
     </>)

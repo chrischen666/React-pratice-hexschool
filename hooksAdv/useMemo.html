@@ -47,11 +47,13 @@
               //total放在頂層會重複觸發
               // console.log(total);
 
-              //使用useMemo並帶入依賴陣列就只會在陣列的值有變更時才會變動
+              //使用useMemo並帶入依賴陣列就只會在陣列的值有變更時才會變動()
+              //useMemo與useEffect最大不同是會回傳一個值到變數上
               const memoTotal = useMemo(() => {
                 return price * qty;
               }, [price, qty]);
 
+              
               return (
                 <>
                   {price} {qty}

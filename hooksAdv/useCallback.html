@@ -106,7 +106,7 @@
               const [text, setText] = useState("");
               const [items, setItems] = useState([]);
 
-              // useCallback當依賴陣列有變動時才會觸發重新渲染
+              // useCallback減少函式重新建立
               const handleCheck = useCallback((e) => {
                 if (e.target.checked) {
                   setItems([...items, e.target.value]);

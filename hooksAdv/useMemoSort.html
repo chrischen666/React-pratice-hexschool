@@ -74,6 +74,9 @@
             ];
               
             //memo的作用是只有props更新時才會觸發內層元件渲染，外層的input怎麼更新都不會觸發內層memo元件重新渲染
+            //memo不是一個hook
+            //memo沒有依賴陣列
+            //memo主要針對減少元件重複渲染
               const  DataTable = memo(({filterData})=>{
                 console.log('DataTable被渲染了');
                 return (
@@ -116,6 +119,7 @@
               //   });
               // }, [search, ascending]);
 
+              //useMemo減少重複計算，只有當依賴項目變更才會重新計算並回傳
               const filterData = useMemo(() => {
                 // 如果 search === ""（空字串），則：
 	              // •	match("") 在所有字串中都會回傳 true（因為空字串匹配任何字串）。

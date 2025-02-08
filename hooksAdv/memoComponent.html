@@ -51,6 +51,7 @@
     const [ascending, setAscending] = useState(true);
     const [search, setSearch] = useState('');
 
+    //useMemo減少計算結果重新計算
     const filterProducts = useMemo(() => {
       return [...products]
         .filter((product) => {
